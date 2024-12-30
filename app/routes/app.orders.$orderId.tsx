@@ -75,21 +75,24 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   if (!orderId) return;
 
   const formData = await request.formData();
+  // This is [[string id, LineItem lineItem], [string id, LineItem lineItem]...]
   const editedLineItems = JSON.parse(
     (formData.get("editedLineItems") as string) || "{}",
   );
 
-  console.log("EDITED LINE ITEMS: ");
-  // This is [[string id, LineItem lineItem], [string id, LineItem lineItem]...]
-  console.log(editedLineItems);
-
   console.log("Order ID: ", orderId);
+  console.log("Line Items: ", editedLineItems);
   // so for each line item, create a custom line item with its properties and remove the line item with the id
   const mutationBeginEdit = `
     mutation beginEdit {
       orderEditBegin(id: "gid://shopify/Order/${orderId}"){
         calculatedOrder{
           id
+          lineItems (first: 50) {
+            nodes {
+              id
+            }
+          }
         }
         userErrors {
           field
@@ -100,17 +103,25 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
   const beginEditResponse = await admin.graphql(mutationBeginEdit);
   const beginEditData = await beginEditResponse.json();
-  console.log("begin edit data response: ", beginEditData.data);
-
+  console.log(
+    "begin edit data response: ",
+    beginEditData.data.orderEditBegin.calculatedOrder.lineItems,
+  );
   const calculatedOrderId =
     beginEditData.data.orderEditBegin.calculatedOrder.id;
 
-  const mutation = `
+  for (const [id, lineItem] of editedLineItems) {
+    const quantity = lineItem.quantity;
+    if (!quantity) continue;
+    const total = lineItem.total / parseInt(quantity);
+    const title = lineItem.title;
+    console.log("Line item ID: ", lineItem.id);
+    const mutation = `
     mutation addCustomItemToOrder {
-      orderEditAddCustomItem(id: "${calculatedOrderId}", title: "Custom Line Item", quantity: 1, price: { amount: 40.00, currencyCode: USD }) {
+      orderEditAddCustomItem(id: "${calculatedOrderId}", title: "${title}", quantity: ${parseInt(quantity)}, price: { amount: ${total}, currencyCode: USD }) {
         calculatedOrder {
           id
-          addedLineItems(first: 5) {
+          addedLineItems(first: 50) {
             edges {
               node {
                 id
@@ -126,10 +137,49 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     }
   `;
 
-  const response = await admin.graphql(mutation);
-  const data = await response.json();
-  console.log("GOT BACK DATA FROM MUTATION: ", data);
+    const response = await admin.graphql(mutation);
+    const data = await response.json();
+    console.log("GOT BACK DATA FROM MUTATION: ", data);
+    console.log(
+      "calculatedLineItemId: ",
+      data.data.orderEditAddCustomItem.calculatedOrder.addedLineItems
+        .edges,
+    );
+    const calculatedLineItemId = lineItem.id.replace(
+      "LineItem",
+      "CalculatedLineItem",
+    );
+    console.log("Calculated line item ID: ", calculatedLineItemId);
+    // const calculatedLineItemId =
+    //   data.data.orderEditAddCustomItem.calculatedOrder.addedLineItems
+    //     .edges;
 
+    const removeItemMutation = `
+      mutation removeLineItem {
+        orderEditSetQuantity(id: "${calculatedOrderId}", lineItemId: "${calculatedLineItemId}", quantity: 0) {
+          calculatedOrder {
+            id
+            lineItems(first: 5) {
+              edges {
+                node {
+                  id
+                  quantity
+                }
+              }
+            }
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `;
+
+    const removeItemResponse = await admin.graphql(removeItemMutation);
+    const removeItemData = await removeItemResponse.json();
+    console.log("Remove item data: ", removeItemData);
+  }
   const commitEditMutation = `
     mutation commitEdit {
       orderEditCommit(id: "${calculatedOrderId}", notifyCustomer: false, staffNote: "I edited the order! It was me!") {
