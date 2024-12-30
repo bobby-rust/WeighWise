@@ -1,0 +1,37 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "8bc142476c2ac60933a85c33b90391f8"
+application_url = "https://celtic-poly-consumers-killer.trycloudflare.com"
+embedded = true
+name = "weight-price-adjuster"
+handle = "weight-price-adjuster-1"
+
+[webhooks]
+api_version = "2024-10"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_products read_customers read_orders write_orders write_order_edits"
+
+[auth]
+redirect_urls = [
+  "https://celtic-poly-consumers-killer.trycloudflare.com/auth/callback",
+  "https://celtic-poly-consumers-killer.trycloudflare.com/auth/shopify/callback",
+  "https://celtic-poly-consumers-killer.trycloudflare.com/api/auth/callback"
+]
+
+[pos]
+embedded = false
+
+[build]
+dev_store_url = "edit-order-weight.myshopify.com"
+automatically_update_urls_on_dev = true
+include_config_on_deploy = true
