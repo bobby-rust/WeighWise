@@ -256,7 +256,7 @@ export default function OrderDetails() {
       let pricePerLb =
         item.variant?.price ||
         item.discountedUnitPriceSet.presentmentMoney.amount;
-      let finalWeight = "0.00";
+      let finalWeight = "1.00"; // when in doubt, 1lb it out
       if (item.variant) {
         const variant: any = item.variant;
         variant.selectedOptions.forEach((opt: any) => {
@@ -284,7 +284,7 @@ export default function OrderDetails() {
         ).toFixed(2);
         const extractWeightRegex = /\b(\d+\.\d+)(?=lb)/;
         const wt = title.match(extractWeightRegex);
-        finalWeight = wt ? parseFloat(wt[1]).toFixed(2) : "0.00";
+        finalWeight = wt ? parseFloat(wt[1]).toFixed(2) : "1.00";
       }
       const curItem: LineItem = {
         id: item.id,
