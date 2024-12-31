@@ -1,10 +1,10 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "8bc142476c2ac60933a85c33b90391f8"
-application_url = "https://speeds-moment-setup-transparent.trycloudflare.com"
+application_url = "https://courier-watch-expects-pie.trycloudflare.com"
 embedded = true
-name = "weight-price-adjuster"
-handle = "weight-price-adjuster-1"
+name = "Weight Price Adjuster"
+handle = "weight-price-adjuster"
 
 [webhooks]
 api_version = "2024-10"
@@ -23,9 +23,9 @@ scopes = "read_products read_customers read_orders write_orders write_order_edit
 
 [auth]
 redirect_urls = [
-  "https://speeds-moment-setup-transparent.trycloudflare.com/auth/callback",
-  "https://speeds-moment-setup-transparent.trycloudflare.com/auth/shopify/callback",
-  "https://speeds-moment-setup-transparent.trycloudflare.com/api/auth/callback"
+  "https://courier-watch-expects-pie.trycloudflare.com/auth/callback",
+  "https://courier-watch-expects-pie.trycloudflare.com/auth/shopify/callback",
+  "https://courier-watch-expects-pie.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]

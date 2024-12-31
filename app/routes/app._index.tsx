@@ -15,6 +15,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
             id
             name
             createdAt
+            cartDiscountAmountSet {
+              presentmentMoney {
+                amount
+              }
+            }
             currentSubtotalPriceSet {
               presentmentMoney {
                 amount
@@ -50,13 +55,25 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const response = await admin.graphql(query);
   const ordersData = await response.json();
   const orders = ordersData.data.orders.edges.map((order: any) => {
-    console.log("Order: ", order.node.lineItems.edges[0].node.variant);
+    const orderSubtotal = parseFloat(
+      order.node.currentSubtotalPriceSet.presentmentMoney.amount,
+    );
+
+    const orderDiscount = parseFloat(
+      order.node.cartDiscountAmountSet?.presentmentMoney.amount,
+    );
+
+    let subtotal = orderSubtotal;
+    if (!isNaN(orderDiscount)) {
+      // The subtotal is after discounts applied, un-apply the discount for clarity
+      subtotal += orderDiscount;
+    }
+
     return {
       id: order.node.id,
       name: order.node.name || "Guest",
       created: order.node.createdAt,
-      subtotal:
-        order.node.currentSubtotalPriceSet.presentmentMoney.amount,
+      subtotal: subtotal,
       customer: `${order.node.customer?.firstName || "Guest"} ${order.node.customer?.lastName || ""}`,
       email: order.node.customer?.email || "N/A",
       items: order.node.lineItems.edges.map((lineItem: any) => ({
@@ -72,8 +89,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   return orders;
 };
 
-export const action = async ({ request, params }: ActionFunctionArgs) => {
-  const { admin } = await authenticate.admin(request);
+export const action = async ({ request }: ActionFunctionArgs) => {
+  await authenticate.admin(request);
 };
 
 export default function Index() {
@@ -82,7 +99,6 @@ export default function Index() {
   const navigate = useNavigate();
 
   const rows = orders.map((order: any) => {
-    console.log("Order: ", order);
     return [
       order.name,
       order.customer,
@@ -94,10 +110,6 @@ export default function Index() {
         variant="primary"
         key={order.id + order.email}
         onClick={() => {
-          console.log("Ouch!");
-          // navigate(
-          //   `/orders/${order.id.replace("gid://shopify/Order/", "")}`,
-          // );
           navigate(
             `/app/orders/${order.id.replace("gid://shopify/Order/", "")}`,
           );
