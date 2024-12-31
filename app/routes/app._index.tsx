@@ -53,12 +53,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     console.log("Order: ", order.node.lineItems.edges[0].node.variant);
     return {
       id: order.node.id,
-      name: order.node.name,
+      name: order.node.name || "Guest",
       created: order.node.createdAt,
       subtotal:
         order.node.currentSubtotalPriceSet.presentmentMoney.amount,
-      customer: `${order.node.customer.firstName} ${order.node.customer.lastName}`,
-      email: order.node.customer.email,
+      customer: `${order.node.customer?.firstName || "Guest"} ${order.node.customer?.lastName || ""}`,
+      email: order.node.customer?.email || "N/A",
       items: order.node.lineItems.edges.map((lineItem: any) => ({
         title:
           lineItem.node.variant?.displayName || lineItem.node.title,
@@ -82,13 +82,13 @@ export default function Index() {
   const navigate = useNavigate();
 
   const rows = orders.map((order: any) => {
-    // console.log("Order: ", order);
+    console.log("Order: ", order);
     return [
       order.name,
       order.customer,
       order.email,
       new Date(order.created).toLocaleString(),
-      `${order.items[0].quantity} x ${order.items[0].title} @ $${parseFloat(order.items[0].price).toFixed(2)}`,
+      `${order.items[0].quantity} x ${order.items[0].title.replace(" - Default Title", "")} @ $${parseFloat(order.items[0].price).toFixed(2)}/lb`,
       `$${parseFloat(order.subtotal).toFixed(2)}`,
       <Button
         variant="primary"

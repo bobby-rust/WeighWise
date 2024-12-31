@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "8bc142476c2ac60933a85c33b90391f8"
-application_url = "https://contributions-diamond-creator-pocket.trycloudflare.com"
+application_url = "https://speeds-moment-setup-transparent.trycloudflare.com"
 embedded = true
 name = "weight-price-adjuster"
 handle = "weight-price-adjuster-1"
@@ -23,9 +23,9 @@ scopes = "read_products read_customers read_orders write_orders write_order_edit
 
 [auth]
 redirect_urls = [
-  "https://contributions-diamond-creator-pocket.trycloudflare.com/auth/callback",
-  "https://contributions-diamond-creator-pocket.trycloudflare.com/auth/shopify/callback",
-  "https://contributions-diamond-creator-pocket.trycloudflare.com/api/auth/callback"
+  "https://speeds-moment-setup-transparent.trycloudflare.com/auth/callback",
+  "https://speeds-moment-setup-transparent.trycloudflare.com/auth/shopify/callback",
+  "https://speeds-moment-setup-transparent.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]

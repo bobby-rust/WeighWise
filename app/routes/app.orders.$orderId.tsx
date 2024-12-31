@@ -18,12 +18,30 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
   const orderId = params.orderId;
   console.log(orderId);
+
+  // Need variant price / weight variant for per lb price
   const query = `
     query getOrderDetails($id: ID!) {
       order(id: $id) {
         id
         name
         createdAt
+        discountApplications (first:50) {
+      		nodes {
+            allocationMethod
+            targetSelection
+            targetType
+            value {
+              __typename
+              ... on MoneyV2 {
+                amount
+              }
+              ... on PricingPercentageValue {
+                percentage
+              }
+            }
+          }
+    		}
         subtotalPriceSet {
           presentmentMoney {
             amount
@@ -46,6 +64,13 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
               id
               displayName
               price
+              selectedOptions {
+                name
+                optionValue {
+                  name
+                }
+                value
+              }
             }
             discountedUnitPriceSet {
               presentmentMoney {
@@ -113,12 +138,12 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   for (const [id, lineItem] of editedLineItems) {
     const quantity = lineItem.quantity;
     if (!quantity) continue;
-    const total = lineItem.total / parseInt(quantity);
+    const total = lineItem.total;
     const title = lineItem.title;
     console.log("Line item ID: ", lineItem.id);
     const mutation = `
     mutation addCustomItemToOrder {
-      orderEditAddCustomItem(id: "${calculatedOrderId}", title: "${title}", quantity: ${parseInt(quantity)}, price: { amount: ${total}, currencyCode: USD }) {
+      orderEditAddCustomItem(id: "${calculatedOrderId}", title: "${title} ${parseFloat(lineItem.finalWeight).toFixed(2)}lb @ $${lineItem.pricePerLb}/lb", quantity: 1, price: { amount: ${total}, currencyCode: USD }) {
         calculatedOrder {
           id
           addedLineItems(first: 50) {
@@ -207,6 +232,14 @@ interface LineItem {
   image: string;
   title: string;
   quantity: string;
+  // variant: {
+  //   selectedOptions: {
+  //     name: string;
+  //     optionValue: {
+  //       name: string;
+  //     };
+  //   };
+  // };
   pricePerLb: string;
   finalWeight: string;
   total: string;
@@ -224,15 +257,35 @@ export default function OrderDetails() {
     loaderData.order.lineItems.nodes.forEach((item: any) => {
       console.log(item);
       if (item.refundableQuantity < 1) return;
+      let pricePerLb = item.variant?.price;
+      let finalWeight = "";
+      if (item.variant) {
+        const variant: any = item.variant;
+        console.log("Variant: ", variant);
+        variant.selectedOptions.forEach((opt: any) => {
+          console.log("OPT: ", opt);
+          if (opt.name.trim().toLowerCase() == "weight") {
+            let lbs =
+              parseInt(
+                opt.optionValue.name
+                  .trim()
+                  .toLowerCase()
+                  .replace("lb", ""),
+              ) || 1;
+            pricePerLb = (variant.price / lbs).toFixed(2);
+            finalWeight = lbs.toFixed(2);
+          }
+        });
+      }
       const curItem: LineItem = {
         id: item.id,
         image: item.image?.url,
         title:
-          item.variant?.displayName.replace("- Default Title", "") ||
+          item.variant?.displayName.replace(" - Default Title", "") ||
           item.title,
         quantity: item.refundableQuantity,
-        pricePerLb: item.variant?.price,
-        finalWeight: "",
+        pricePerLb: pricePerLb,
+        finalWeight: finalWeight,
         total: (
           parseFloat(item.refundableQuantity) *
           parseFloat(item.variant?.price)
