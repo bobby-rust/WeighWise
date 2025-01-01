@@ -10,9 +10,9 @@ import {
   InlineStack,
   Text,
   BlockStack,
+  Spinner,
 } from "@shopify/polaris";
 import { useLoaderData, Form, useNavigate, useSubmit } from "@remix-run/react";
-import { TitleBar } from "@shopify/app-bridge-react";
 import { useEffect, useRef, useState } from "react";
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
@@ -243,11 +243,22 @@ interface LineItem {
 
 type LineItems = Map<string, LineItem>;
 
+// TODO: Order Preview, handle custom cut beef
 export default function OrderDetails() {
   const loaderData = useLoaderData<typeof loader>();
   const submit = useSubmit();
   const navigate = useNavigate();
   const uneditedLineItemsRef = useRef<LineItems | null>(null);
+  const [lineItems, setLineItems] = useState<LineItems>(
+    new Map<string, LineItem>(),
+  ); // State for edited line items
+
+  const [removedItemsPreview, setRemovedItemsPreview] =
+    useState<LineItems | null>(null);
+  const [addedItemsPreview, setAddedItemsPreview] =
+    useState<LineItems | null>(null);
+
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     const lineItems: LineItems = new Map<string, LineItem>();
@@ -310,12 +321,14 @@ export default function OrderDetails() {
     setLineItems(lineItems);
   }, [loaderData.order]);
 
-  const [lineItems, setLineItems] = useState<LineItems>(
-    new Map<string, LineItem>(),
-  ); // State for edited line items
-
   const handleCancel = () => {
     navigate("/app");
+  };
+
+  // Find the changed line items and update the order preview states
+  const diffLineItems = () => {
+    for (const [id, item] of lineItems) {
+    }
   };
 
   const handlePriceChange = (id: string, value: string) => {
@@ -338,13 +351,9 @@ export default function OrderDetails() {
     setLineItems(newLineItems);
   };
 
-  // If the price doesn't change, we probably don't want to edit the line item
-  function compareLineItem(i1: LineItem, i2: LineItem) {
-    return i1.total === i2.total;
-  }
-
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    setIsLoading(true);
     if (!uneditedLineItemsRef.current) return;
     const editedLineItems: LineItems = new Map<string, LineItem>();
     for (const lineItem of lineItems) {
@@ -354,7 +363,8 @@ export default function OrderDetails() {
       const uneditedLineItem = uneditedLineItemsRef.current.get(id);
       if (!uneditedLineItem) continue;
 
-      if (!compareLineItem(uneditedLineItem, item)) {
+      // If the total price doesn't change, don't edit the item
+      if (uneditedLineItem.total !== item.total) {
         editedLineItems.set(id, item);
       }
     }
@@ -380,7 +390,7 @@ export default function OrderDetails() {
 
     const newLineItems = structuredClone(lineItems);
     const newLineItem = newLineItems.get(id);
-    if (!newLineItem) return;
+    if (!newLineItem) return; // This should never happen
 
     newLineItem.finalWeight = value;
     let newTotal =
@@ -480,37 +490,129 @@ export default function OrderDetails() {
   });
 
   return (
-    <Page>
-      <TitleBar title={`Order ${loaderData.order.name}`} />
+    <Page fullWidth title="Edit Order Weight">
       <BlockStack gap="500">
-        <Card>
-          <InlineStack gap="400">
-            <Text as="h2" variant="headingMd">
-              {loaderData.order.customer.firstName || "Guest"}{" "}
-              {loaderData.order.customer.lastName || "Guest"}
-            </Text>
-            <Text as="h2" variant="headingMd">
-              {loaderData.order.customer.email || ""}
-            </Text>
-          </InlineStack>
-        </Card>
-        <Card>
-          {/* Header Section */}
-          <InlineStack
-            align="space-between"
-            blockAlign="center"
-            gap="200"
-          >
-            <Text as="h2" variant="headingMd">
-              {loaderData.order.name}
-            </Text>
-            <Text as="h2" variant="headingMd">
-              {new Date(
-                loaderData.order.createdAt,
-              ).toLocaleString()}
-            </Text>
-          </InlineStack>
-          <Form method="POST">
+        {/* <TitleBar title={`Order ${loaderData.order.name}`} /> */}
+        <BlockStack gap="500">
+          <Card>
+            <InlineStack gap="400">
+              <Text as="h2" variant="headingMd">
+                {loaderData.order.customer.firstName || "Guest"}{" "}
+                {loaderData.order.customer.lastName || "Guest"}
+              </Text>
+              <Text as="h2" variant="headingMd">
+                {loaderData.order.customer.email || ""}
+              </Text>
+            </InlineStack>
+          </Card>
+          <Card>
+            {/* Header Section */}
+            <InlineStack
+              align="space-between"
+              blockAlign="center"
+              gap="200"
+            >
+              <Text as="h2" variant="headingMd">
+                Order {loaderData.order.name}
+              </Text>
+              <Text as="h2" variant="headingMd">
+                {new Date(
+                  loaderData.order.createdAt,
+                ).toLocaleString()}
+              </Text>
+            </InlineStack>
+            <Form method="POST">
+              <DataTable
+                columnContentTypes={[
+                  "text",
+                  "text",
+                  "text",
+                  "text",
+                  "text",
+                  "text",
+                ]}
+                headings={columns.filter(
+                  (col) =>
+                    col !== "Order Name" &&
+                    col !== "Created At",
+                )}
+                rows={rows.map((row) =>
+                  row.filter(
+                    (_, index) =>
+                      index !== 1 && index !== 2,
+                  ),
+                )} // Remove first two columns (Order Name, Created At)
+                verticalAlign="middle"
+              />
+              {/* Hidden input to submit the edited line items */}
+              <input
+                type="hidden"
+                name="editedLineItems"
+                value={JSON.stringify(lineItems)}
+              />
+              {/* Save Button */}
+              <InlineStack
+                align="end"
+                blockAlign="center"
+                gap="200"
+              >
+                <Button
+                  variant="secondary"
+                  onClick={handleCancel}
+                >
+                  Cancel
+                </Button>
+                <div
+                  style={{
+                    width: "6rem",
+                    display: "flex",
+                    justifyContent: "center",
+                  }}
+                >
+                  {isLoading ? (
+                    <Spinner
+                      size="small"
+                      accessibilityLabel="loading spinner"
+                    />
+                  ) : (
+                    <Button
+                      variant="primary"
+                      onClick={
+                        handleSubmit as () => unknown
+                      }
+                    >
+                      Save Edits
+                    </Button>
+                  )}
+                </div>
+              </InlineStack>
+            </Form>
+          </Card>
+        </BlockStack>
+        <BlockStack gap="500">
+          <Card>
+            <InlineStack gap="400">
+              <Text as="h2" variant="headingMd">
+                Preview Changes
+              </Text>
+            </InlineStack>
+          </Card>
+          <Card>
+            {/* Header Section */}
+            <InlineStack
+              align="space-between"
+              blockAlign="center"
+              gap="200"
+            >
+              <Text as="h2" variant="headingMd">
+                Order {loaderData.order.name}
+              </Text>
+              <Text as="h2" variant="headingMd">
+                {new Date(
+                  loaderData.order.createdAt,
+                ).toLocaleString()}
+              </Text>
+            </InlineStack>
             <DataTable
               columnContentTypes={[
                 "text",
@@ -532,26 +634,8 @@ export default function OrderDetails() {
               )} // Remove first two columns (Order Name, Created At)
               verticalAlign="middle"
             />
-            {/* Hidden input to submit the edited line items */}
-            <input
-              type="hidden"
-              name="editedLineItems"
-              value={JSON.stringify(lineItems)}
-            />
-            {/* Save Button */}
-            <InlineStack align="end" blockAlign="center" gap="200">
-              <Button variant="secondary" onClick={handleCancel}>
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                onClick={handleSubmit as () => unknown}
-              >
-                Save Edits
-              </Button>
-            </InlineStack>
-          </Form>
-        </Card>
+          </Card>
+        </BlockStack>
       </BlockStack>
     </Page>
   );

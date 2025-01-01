@@ -115,7 +115,7 @@ export default function Index() {
           );
         }}
       >
-        Edit
+        Edit Order
       </Button>,
     ];
   });
@@ -127,10 +127,10 @@ export default function Index() {
     "Created At",
     "First Item",
     "Subtotal",
-    "Edit",
+    "Edit Order",
   ];
   return (
-    <Page>
+    <Page fullWidth>
       <TitleBar title="Unfulfilled Orders" />
       <Card>
         <DataTable
