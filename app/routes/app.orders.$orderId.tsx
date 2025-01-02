@@ -141,7 +141,13 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     const quantity = lineItem.quantity;
     if (!quantity) continue;
     const total = lineItem.total;
-    const title = lineItem.title;
+    let title = lineItem.title;
+    if (title.includes("@")) {
+      const extractProductNameRegex = /^(.*?)\s\d+(\.\d+)?\s?\w*\s@\s/;
+      const match = title.match(extractProductNameRegex);
+      if (match && match.length > 1) title = match[1];
+    }
+
     const mutation = `
     mutation addCustomItemToOrder {
       orderEditAddCustomItem(id: "${calculatedOrderId}", title: "${title} ${parseFloat(lineItem.finalWeight).toFixed(2)}lb @ $${lineItem.pricePerLb}/lb", quantity: 1, price: { amount: ${total}, currencyCode: USD }) {
@@ -323,12 +329,6 @@ export default function OrderDetails() {
 
   const handleCancel = () => {
     navigate("/app");
-  };
-
-  // Find the changed line items and update the order preview states
-  const diffLineItems = () => {
-    for (const [id, item] of lineItems) {
-    }
   };
 
   const handlePriceChange = (id: string, value: string) => {
@@ -589,53 +589,53 @@ export default function OrderDetails() {
             </Form>
           </Card>
         </BlockStack>
-        <BlockStack gap="500">
-          <Card>
-            <InlineStack gap="400">
-              <Text as="h2" variant="headingMd">
-                Preview Changes
-              </Text>
-            </InlineStack>
-          </Card>
-          <Card>
-            {/* Header Section */}
-            <InlineStack
-              align="space-between"
-              blockAlign="center"
-              gap="200"
-            >
-              <Text as="h2" variant="headingMd">
-                Order {loaderData.order.name}
-              </Text>
-              <Text as="h2" variant="headingMd">
-                {new Date(
-                  loaderData.order.createdAt,
-                ).toLocaleString()}
-              </Text>
-            </InlineStack>
-            <DataTable
-              columnContentTypes={[
-                "text",
-                "text",
-                "text",
-                "text",
-                "text",
-                "text",
-              ]}
-              headings={columns.filter(
-                (col) =>
-                  col !== "Order Name" &&
-                  col !== "Created At",
-              )}
-              rows={rows.map((row) =>
-                row.filter(
-                  (_, index) => index !== 1 && index !== 2,
-                ),
-              )} // Remove first two columns (Order Name, Created At)
-              verticalAlign="middle"
-            />
-          </Card>
-        </BlockStack>
+        {/* <BlockStack gap="500"> */}
+        {/*   <Card> */}
+        {/*     <InlineStack gap="400"> */}
+        {/*       <Text as="h2" variant="headingMd"> */}
+        {/*         Preview Changes */}
+        {/*       </Text> */}
+        {/*     </InlineStack> */}
+        {/*   </Card> */}
+        {/*   <Card> */}
+        {/*     {/* Header Section } */}
+        {/*     <InlineStack */}
+        {/*       align="space-between" */}
+        {/*       blockAlign="center" */}
+        {/*       gap="200" */}
+        {/*     > */}
+        {/*       <Text as="h2" variant="headingMd"> */}
+        {/*         Order {loaderData.order.name} */}
+        {/*       </Text> */}
+        {/*       <Text as="h2" variant="headingMd"> */}
+        {/*         {new Date( */}
+        {/*           loaderData.order.createdAt, */}
+        {/*         ).toLocaleString()} */}
+        {/*       </Text> */}
+        {/*     </InlineStack> */}
+        {/*     <DataTable */}
+        {/*       columnContentTypes={[ */}
+        {/*         "text", */}
+        {/*         "text", */}
+        {/*         "text", */}
+        {/*         "text", */}
+        {/*         "text", */}
+        {/*         "text", */}
+        {/*       ]} */}
+        {/*       headings={columns.filter( */}
+        {/*         (col) => */}
+        {/*           col !== "Order Name" && */}
+        {/*           col !== "Created At", */}
+        {/*       )} */}
+        {/*       rows={rows.map((row) => */}
+        {/*         row.filter( */}
+        {/*           (_, index) => index !== 1 && index !== 2, */}
+        {/*         ), */}
+        {/*       )} // Remove first two columns (Order Name, Created At) */}
+        {/*       verticalAlign="middle" */}
+        {/*     /> */}
+        {/*   </Card> */}
+        {/* </BlockStack> */}
       </BlockStack>
     </Page>
   );
