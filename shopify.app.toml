@@ -1,7 +1,8 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "8bc142476c2ac60933a85c33b90391f8"
-application_url = "https://assessments-pointer-links-danny.trycloudflare.com"
+application_url = "https://weight-price-adjuster.vercel.app"
+
 embedded = true
 name = "Weight Price Adjuster"
 handle = "weight-price-adjuster"
@@ -23,9 +24,9 @@ scopes = "read_products read_customers read_orders write_orders write_order_edit
 
 [auth]
 redirect_urls = [
-  "https://assessments-pointer-links-danny.trycloudflare.com/auth/callback",
-  "https://assessments-pointer-links-danny.trycloudflare.com/auth/shopify/callback",
-  "https://assessments-pointer-links-danny.trycloudflare.com/api/auth/callback"
+  "https://weight-price-adjuster.vercel.app/auth/callback",
+  "https://weight-price-adjuster.vercel.app/auth/shopify/callback",
+  "https://weight-price-adjuster.vercel.app/api/auth/callback"
 ]
 
 [pos]
