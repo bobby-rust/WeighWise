@@ -2,7 +2,6 @@
 
 client_id = "8bc142476c2ac60933a85c33b90391f8"
 application_url = "https://weight-price-adjuster.vercel.app"
-
 embedded = true
 name = "Weight Price Adjuster"
 handle = "weight-price-adjuster"
