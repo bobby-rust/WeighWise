@@ -9,12 +9,12 @@ generator client {
 // enough when changing adapters.
 // See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
 datasource db {
-  provider = "mongodb"
-  url      = env("MONGODB_URI")
+  provider = "sqlite"
+  url      = "file:dev.sqlite"
 }
 
 model Session {
-  id            String    @id @default(auto()) @map("_id") // Use _id as the identifier
+  id            String    @id
   shop          String
   state         String
   isOnline      Boolean   @default(false)
