@@ -1,21 +1,15 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "8bc142476c2ac60933a85c33b90391f8"
-application_url = "https://symbol-residents-ensures-diary.trycloudflare.com"
-embedded = true
 name = "Weight Price Adjuster"
 handle = "weight-price-adjuster"
+application_url = "https://placing-grey-paying-section.trycloudflare.com"
+embedded = true
 
-[webhooks]
-api_version = "2024-10"
-
-  [[webhooks.subscriptions]]
-  topics = [ "app/uninstalled" ]
-  uri = "/webhooks/app/uninstalled"
-
-  [[webhooks.subscriptions]]
-  topics = [ "app/scopes_update" ]
-  uri = "/webhooks/app/scopes_update"
+[build]
+automatically_update_urls_on_dev = true
+dev_store_url = "edit-order-weight.myshopify.com"
+include_config_on_deploy = true
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
@@ -23,15 +17,21 @@ scopes = "read_products read_customers read_orders write_orders write_order_edit
 
 [auth]
 redirect_urls = [
-  "https://symbol-residents-ensures-diary.trycloudflare.com/auth/callback",
-  "https://symbol-residents-ensures-diary.trycloudflare.com/auth/shopify/callback",
-  "https://symbol-residents-ensures-diary.trycloudflare.com/api/auth/callback"
+  "https://placing-grey-paying-section.trycloudflare.com/auth/callback",
+  "https://placing-grey-paying-section.trycloudflare.com/auth/shopify/callback",
+  "https://placing-grey-paying-section.trycloudflare.com/api/auth/callback"
 ]
+
+[webhooks]
+api_version = "2024-10"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
 
 [pos]
 embedded = false
-
-[build]
-dev_store_url = "edit-order-weight.myshopify.com"
-automatically_update_urls_on_dev = true
-include_config_on_deploy = true
