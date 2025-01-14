@@ -3,7 +3,7 @@
 client_id = "8bc142476c2ac60933a85c33b90391f8"
 name = "Weight Price Adjuster"
 handle = "weight-price-adjuster"
-application_url = "https://placing-grey-paying-section.trycloudflare.com"
+application_url = "https://findarticles-decent-bali-superb.trycloudflare.com"
 embedded = true
 
 [build]
@@ -17,9 +17,9 @@ scopes = "read_products read_customers read_orders write_orders write_order_edit
 
 [auth]
 redirect_urls = [
-  "https://placing-grey-paying-section.trycloudflare.com/auth/callback",
-  "https://placing-grey-paying-section.trycloudflare.com/auth/shopify/callback",
-  "https://placing-grey-paying-section.trycloudflare.com/api/auth/callback"
+  "https://findarticles-decent-bali-superb.trycloudflare.com/auth/callback",
+  "https://findarticles-decent-bali-superb.trycloudflare.com/auth/shopify/callback",
+  "https://findarticles-decent-bali-superb.trycloudflare.com/api/auth/callback"
 ]
 
 [webhooks]

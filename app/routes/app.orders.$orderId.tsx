@@ -194,11 +194,20 @@ async function addCustomItemToOrder(
  */
 async function addDiscountToLineItem(
   priceDifference: number,
+  quantity: number,
   discountName: string,
   calculatedOrderId: string,
   calculatedLineItemId: string,
   admin: any,
 ) {
+  if (quantity < 1) {
+    // This should never happen because we check quantity before we call this function,
+    // but overly safe is better in case the code gets changed later
+    throw new Error(
+      "Attempting to add a discount to an item that has a quantity of 0",
+    );
+  }
+
   const mutation = `
     mutation orderEditAddLineItemDiscount($discount: OrderEditAppliedDiscountInput!, $id: ID!, $lineItemId: ID!) {
       orderEditAddLineItemDiscount(
@@ -247,12 +256,17 @@ async function addDiscountToLineItem(
   `;
 
   console.log("Adding discount to order.");
+  console.log(
+    `priceDifference / quantity: ${priceDifference} / ${quantity} = ${priceDifference / quantity}`,
+  );
+  const discountAmount = priceDifference / quantity;
+  console.log("Adding discount with amount: ", discountAmount);
   const response = await admin.graphql(mutation, {
     variables: {
       discount: {
         description: `${discountName}`,
         fixedValue: {
-          amount: priceDifference,
+          amount: discountAmount,
           currencyCode: "USD",
         },
       },
@@ -311,7 +325,7 @@ async function addDiscountToLineItem(
         // but whatever u say typescript little buddy
         description: `${discountName} discount_id:${(discountId as string).replace("gid://shopify/CalculatedManualDiscountApplication/", "")}`,
         fixedValue: {
-          amount: priceDifference,
+          amount: discountAmount,
           currencyCode: "USD",
         },
       },
@@ -548,6 +562,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       // Check
       await addDiscountToLineItem(
         Math.abs(priceDifference),
+        quantity,
         editTitle,
         calculatedOrderId,
         lineItem.id.replace("LineItem", "CalculatedLineItem"),
@@ -973,7 +988,7 @@ export default function OrderDetails() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    // setIsLoading(true);
+    setIsLoading(true);
     if (!uneditedLineItemsRef.current) return;
     const editedLineItems: LineItems = new Map<string, LineItem>();
     for (const lineItem of lineItems) {
