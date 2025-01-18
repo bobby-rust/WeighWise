@@ -9,7 +9,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const query = `
     query getOrders {
-      orders(first: 250, query: "fulfillment_status:unfulfilled") {
+      orders(first: 250, query: "fulfillment_status:unfulfilled AND NOT financial_status:expired AND NOT financial_status:voided") {
         edges {
           node {
             id
@@ -54,6 +54,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const response = await admin.graphql(query);
   const ordersData = await response.json();
+  console.log("Orders data: ", ordersData.data);
   const orders = ordersData.data.orders.edges.map((order: any) => {
     const orderSubtotal = parseFloat(
       order.node.currentSubtotalPriceSet.presentmentMoney.amount,
