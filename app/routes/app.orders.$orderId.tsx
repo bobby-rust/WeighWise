@@ -98,6 +98,17 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
                 amount
               }
             }
+            product {
+              metafields(first: 10) {
+                nodes {
+                  id
+                  key
+                  namespace
+                  jsonValue
+                  description
+                }
+              }
+            }
           }
         }
       }
@@ -117,6 +128,11 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   console.log(
     "Order details query discount data: ",
     orderDetails.data?.order.discountApplications.nodes[0]?.value,
+  );
+  console.log(
+    "Order details products: ",
+    orderDetails.data?.order.lineItems.nodes[0].product.metafields.nodes[0]
+      ?.jsonValue.amount,
   );
   return {
     order: orderDetails.data.order,
@@ -660,7 +676,7 @@ function separateActualFromCustomLineItems(order: any) {
     }
   });
 
-  return { actualLineItems, customLineItems }; // Ensure the map is returned
+  return { actualLineItems, customLineItems };
 }
 
 /**
@@ -673,9 +689,6 @@ function applyPreexistingEditsToLineItems(
   actualLineItems: Map<string, LineItem>,
   customLineItems: Map<string, CustomLineItem>,
 ): Map<string, LineItem> {
-  console.log("Applying edits.");
-  console.log("Actual line items before applying edits: ", actualLineItems);
-  console.log("Custom line item upcharges: ", customLineItems);
   // For each custom line item, match the id with the actual line item and add the upcharge to the line item's total
   // For each discount, match the id with the actual line item and subtract the discount amount from the line item's total
   const lineItemsAfterEdits = new Map<string, LineItem>(actualLineItems);
@@ -687,13 +700,11 @@ function applyPreexistingEditsToLineItems(
         "gid://shopify/LineItem/" +
         titleSplit[titleSplit.length - 1].split("references_item:")[1];
 
-      console.log("Custom line item ID: ", customLineItemId);
       const actualLineItem = actualLineItems.get(customLineItemId);
       if (!actualLineItem) return null;
 
       // It would probably be most intuitive for the user to just ignore other discounts that aren't associated with this app.
       const upcharge = parseFloat(customLineItem.upchargeAmount);
-      console.log("Applying upcharge of ", upcharge);
 
       actualLineItem.total = (
         parseFloat(actualLineItem.total) + upcharge
@@ -721,7 +732,6 @@ function cleanDiscounts(discounts: any): Map<string, Discount> {
   const cleanedDiscounts: Map<string, Discount> = new Map<string, Discount>();
   discounts.forEach((discount: any) => {
     const discountTitleArr = discount.description?.split(" ");
-    console.log("Discount title arr: ", discountTitleArr);
     if (!discountTitleArr) return;
     const discountReferencesItemId =
       "gid://shopify/LineItem/" +
@@ -729,7 +739,6 @@ function cleanDiscounts(discounts: any): Map<string, Discount> {
         "references_item:",
       )[1];
 
-    console.log("Discount references item ID: ", discountReferencesItemId);
     const itemWeight = extractWeightFromTitle(discount.title);
 
     const cleanedDiscount: Discount = {
@@ -756,7 +765,8 @@ function cleanLineItems(actualLineItems: Map<string, any>) {
         item.variant?.displayName.replace(" - Default Title", "") ||
         item.title,
       quantity: item.refundableQuantity,
-      pricePerLb: "0.00",
+      pricePerLb:
+        item.product?.metafields?.nodes[0]?.jsonValue?.amount || "0.00",
       finalWeight: "0.00",
       // The total does not include the quantity in the GraphQL response, apply the quantity here
       total: (
@@ -775,11 +785,9 @@ function cleanLineItems(actualLineItems: Map<string, any>) {
 
 function extractWeightFromTitle(title: string): string {
   // The weight will be in the title of the custom line item
-  console.log("Extracting weight from title: ", title);
   const weightExtractRegex = /(?<=\()[^)]+(?=\))/;
   const weightMatches = title.match(weightExtractRegex);
 
-  console.log("Weight matches: ", weightMatches);
   let weight = "1.00";
   if (weightMatches?.length) {
     weightMatches.forEach((match: string) => {
@@ -789,14 +797,12 @@ function extractWeightFromTitle(title: string): string {
       }
     });
   }
-  console.log("Got weight from discount/upcharge title: ", weight);
   return parseFloat(weight).toFixed(2);
 }
 
 function extractWeightFromVariantTitle(title: string): string {
   const titleArr = title.split("-");
   const weightArr = titleArr[titleArr.length - 1].trim().split(" ");
-  console.log("Weight arr: ", weightArr);
   const weight = weightArr[0];
   return parseFloat(weight).toFixed(2);
 }
@@ -815,22 +821,12 @@ function calculateLineItemData(
 
   cleanedLineItems.forEach((lineItem: LineItem) => {
     let weight: string | null = null;
-    console.log("Current line item ID: ", lineItem.id);
     // 1. The weight is explicitly stated in the custom item upcharge or discount name
     const customLineItemAssociatedWithThisLineItem = customLineItems.get(
       lineItem.id,
     );
 
-    console.log(
-      "Custom line item associated with this line item: ",
-      customLineItemAssociatedWithThisLineItem,
-    );
     if (customLineItemAssociatedWithThisLineItem) {
-      console.log("Item has upcharge");
-      console.log(
-        "Extracting weight from object: ",
-        customLineItemAssociatedWithThisLineItem,
-      );
       // This item has an upcharge
       weight = extractWeightFromTitle(
         customLineItemAssociatedWithThisLineItem.title,
@@ -838,38 +834,39 @@ function calculateLineItemData(
     }
 
     if (weight !== null && !isNaN(parseFloat(weight))) {
-      console.log("Setting weight obtained from upcharge: ", weight);
       const finalLineItem: LineItem = {
         ...lineItem,
         // We don't multiply by quantity here because we were explicitly told the weight
         finalWeight: weight,
-        pricePerLb: (
-          parseFloat(lineItem.total) / parseFloat(weight)
-        ).toFixed(2),
+        pricePerLb:
+          lineItem.pricePerLb !== "0.00"
+            ? parseFloat(lineItem.pricePerLb).toFixed(2)
+            : (
+              parseFloat(lineItem.total) / parseFloat(weight)
+            ).toFixed(2),
       };
 
       finalLineItems.set(lineItem.id, finalLineItem);
       return;
     }
     const discountAssociatedWithThisLineItem = discounts.get(lineItem.id);
-    console.log(
-      "Discount associated with this line item: ",
-      discountAssociatedWithThisLineItem,
-    );
+
     if (discountAssociatedWithThisLineItem) {
       // This item has a discount
       weight = discountAssociatedWithThisLineItem.weight;
     }
 
     if (weight !== null && !isNaN(parseFloat(weight))) {
-      console.log("Setting weight obtained from discount: ", weight);
       const finalLineItem: LineItem = {
         ...lineItem,
         // We don't multiply by quantity here because we were explicitly told the weight
         finalWeight: weight,
-        pricePerLb: (
-          parseFloat(lineItem.total) / parseFloat(weight)
-        ).toFixed(2),
+        pricePerLb:
+          lineItem.pricePerLb !== "0.00"
+            ? parseFloat(lineItem.pricePerLb).toFixed(2)
+            : (
+              parseFloat(lineItem.total) / parseFloat(weight)
+            ).toFixed(2),
       };
 
       finalLineItems.set(lineItem.id, finalLineItem);
@@ -884,17 +881,19 @@ function calculateLineItemData(
     }
 
     if (weight !== null && !isNaN(parseFloat(weight))) {
-      console.log("Setting weight obtained from variant title: ", weight);
       const finalLineItem: LineItem = {
         ...lineItem,
         finalWeight: (
           parseFloat(weight) * parseInt(lineItem.quantity)
         ).toFixed(2),
-        pricePerLb: (
-          parseFloat(lineItem.total) /
-          parseInt(lineItem.quantity) /
-          parseFloat(weight)
-        ).toFixed(2),
+        pricePerLb:
+          lineItem.pricePerLb !== "0.00"
+            ? parseFloat(lineItem.pricePerLb).toFixed(2)
+            : (
+              parseFloat(lineItem.total) /
+              parseInt(lineItem.quantity) /
+              parseFloat(weight)
+            ).toFixed(2),
       };
 
       finalLineItems.set(lineItem.id, finalLineItem);
@@ -909,17 +908,19 @@ function calculateLineItemData(
       finalWeight: (
         parseFloat(weight) * parseInt(lineItem.quantity)
       ).toFixed(2),
-      pricePerLb: (
-        parseFloat(lineItem.total) /
-        parseInt(lineItem.quantity) /
-        parseFloat(weight)
-      ).toFixed(2),
+      pricePerLb:
+        lineItem.pricePerLb !== "0.00"
+          ? parseFloat(lineItem.pricePerLb).toFixed(2)
+          : (
+            parseFloat(lineItem.total) /
+            parseInt(lineItem.quantity) /
+            parseFloat(weight)
+          ).toFixed(2),
     };
 
     finalLineItems.set(lineItem.id, finalLineItem);
   });
 
-  console.log("FINAL LINE ITEMS: ", finalLineItems);
   return finalLineItems;
 }
 
@@ -940,7 +941,6 @@ export default function OrderDetails() {
   useEffect(() => {
     if (useEffectRanRef.current) return;
     useEffectRanRef.current = true;
-    console.log("USE EFFECT RUNNING");
     const { actualLineItems, customLineItems } =
       separateActualFromCustomLineItems(loaderData.order);
 
@@ -953,8 +953,6 @@ export default function OrderDetails() {
       customLineItems,
       cleanedDiscounts,
     );
-
-    console.log("FINAL LINE ITEMS: ", finalLineItems);
 
     uneditedLineItemsRef.current = finalLineItems;
     customLineItemsRef.current = customLineItems;
@@ -1027,7 +1025,6 @@ export default function OrderDetails() {
     }
 
     if (discountsRef.current) {
-      console.log("Sending discounts to backend: ", discountsRef.current);
       formData.append(
         "discounts",
         JSON.stringify(Array.from(discountsRef.current.entries())),
