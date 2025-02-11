@@ -1,37 +1,37 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "8bc142476c2ac60933a85c33b90391f8"
+application_url = "https://weighwise.robrustdev.com/"
+embedded = true
 name = "Weight Price Adjuster"
 handle = "weight-price-adjuster"
-application_url = "https://sg-bag-respected-charitable.trycloudflare.com"
-embedded = true
 
 [build]
 automatically_update_urls_on_dev = true
 dev_store_url = "edit-order-weight.myshopify.com"
 include_config_on_deploy = true
 
-[access_scopes]
-# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_products read_customers read_orders write_orders write_order_edits"
-
-[auth]
-redirect_urls = [
-  "https://sg-bag-respected-charitable.trycloudflare.com/auth/callback",
-  "https://sg-bag-respected-charitable.trycloudflare.com/auth/shopify/callback",
-  "https://sg-bag-respected-charitable.trycloudflare.com/api/auth/callback"
-]
-
 [webhooks]
 api_version = "2024-10"
 
   [[webhooks.subscriptions]]
   topics = [ "app/scopes_update" ]
-  uri = "/webhooks/app/scopes_update"
+  uri = "https://bronze-editing-founded-decision.trycloudflare.com/webhooks/app/scopes_update"
 
   [[webhooks.subscriptions]]
   topics = [ "app/uninstalled" ]
-  uri = "/webhooks/app/uninstalled"
+  uri = "https://bronze-editing-founded-decision.trycloudflare.com/webhooks/app/uninstalled"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_products,read_customers,read_orders,write_orders,write_order_edits"
+
+[auth]
+redirect_urls = [
+  "https://weighwise.robrustdev.com/auth/callback",
+  "https://weighwise.robrustdev.com/auth/shopify/callback",
+  "https://weighwise.robrustdev.com/api/auth/callback"
+]
 
 [pos]
 embedded = false
