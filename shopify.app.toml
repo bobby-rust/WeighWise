@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "8bc142476c2ac60933a85c33b90391f8"
-application_url = "https://weighwise.robrustdev.com/"
+application_url = "https://weighwise.robrust.dev"
 embedded = true
 name = "Weight Price Adjuster"
 handle = "weight-price-adjuster"
@@ -28,9 +28,9 @@ scopes = "read_products,read_customers,read_orders,write_orders,write_order_edit
 
 [auth]
 redirect_urls = [
-  "https://weighwise.robrustdev.com/auth/callback",
-  "https://weighwise.robrustdev.com/auth/shopify/callback",
-  "https://weighwise.robrustdev.com/api/auth/callback"
+  "https://weighwise.robrust.dev/auth/callback",
+  "https://weighwise.robrust.dev/auth/shopify/callback",
+  "https://weighwise.robrust.dev/api/auth/callback"
 ]
 
 [pos]

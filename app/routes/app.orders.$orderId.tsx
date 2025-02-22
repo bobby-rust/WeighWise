@@ -119,21 +119,26 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       id: `gid://shopify/Order/${orderId}`,
     },
   });
+
+  // console.log("Order id: ", orderId);
   const orderDetails = await response.json();
-  console.log(orderDetails.data.order.lineItems);
-  console.log(
-    "Order details query discount data: ",
-    orderDetails.data?.order.discountApplications,
-  );
-  console.log(
-    "Order details query discount data: ",
-    orderDetails.data?.order.discountApplications.nodes[0]?.value,
-  );
-  console.log(
-    "Order details products: ",
-    orderDetails.data?.order.lineItems.nodes[0].product.metafields.nodes[0]
-      ?.jsonValue.amount,
-  );
+  // console.log(orderDetails.data.order.lineItems);
+  // console.log("ORDER DETAILS: ", orderDetails);
+  // console.log(
+  //   "Order details query discount data: ",
+  //   orderDetails.data?.order.discountApplications,
+  // );
+  // console.log(
+  //   "Order details query discount data: ",
+  //   orderDetails.data?.order.discountApplications.nodes[0]?.value,
+  // );
+  // console.log(
+  //   "Order details products: ",
+  //   orderDetails.data?.order.lineItems.product,
+  // );
+  // for (const product of orderDetails.data?.order.lineItems.nodes) {
+  //   console.log(product);
+  // }
   return {
     order: orderDetails.data.order,
     discounts: orderDetails.data.order.discountApplications.nodes,
@@ -780,6 +785,7 @@ function cleanLineItems(actualLineItems: Map<string, any>) {
     cleanedLineItems.set(item.id, cleanedLineItem);
   });
 
+  console.log("Cleaned line items: ", cleanedLineItems);
   return cleanedLineItems;
 }
 
@@ -819,6 +825,7 @@ function calculateLineItemData(
 ): Map<string, LineItem> {
   const finalLineItems = new Map<string, LineItem>();
 
+  console.log("Calculating line item data.");
   cleanedLineItems.forEach((lineItem: LineItem) => {
     let weight: string | null = null;
     // 1. The weight is explicitly stated in the custom item upcharge or discount name
@@ -846,6 +853,10 @@ function calculateLineItemData(
             ).toFixed(2),
       };
 
+      console.log(
+        "Full line item from null weight and parsed float: ",
+        finalLineItem,
+      );
       finalLineItems.set(lineItem.id, finalLineItem);
       return;
     }
@@ -857,6 +868,9 @@ function calculateLineItemData(
     }
 
     if (weight !== null && !isNaN(parseFloat(weight))) {
+      console.log(
+        "THIS SHOULD NEVER RUN!!!!!! (IF YOU SEE THIS WHAT's HAPPNING!@Q!!",
+      );
       const finalLineItem: LineItem = {
         ...lineItem,
         // We don't multiply by quantity here because we were explicitly told the weight
@@ -921,6 +935,7 @@ function calculateLineItemData(
     finalLineItems.set(lineItem.id, finalLineItem);
   });
 
+  console.log("Final line items: ", finalLineItems);
   return finalLineItems;
 }
 
