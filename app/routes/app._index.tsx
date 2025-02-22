@@ -4,6 +4,55 @@ import { TitleBar } from "@shopify/app-bridge-react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate } from "@remix-run/react";
 
+// Don't show orders containing ONLY these products,
+// as these are not adjustable products
+const blacklistedProductsJson = {
+  customCutBeef: ["7118485389448", "8853497118940"], // TWO FOR TESTING, SECOND ONE IS DEV STORE ID
+  customCutPork: ["8423825997960"],
+  csa: ["7118232944776"],
+  honey: ["8427705958536", "8427707465864"], // regular & cream
+  summerSausage: ["7112410333320"],
+  mapleSyrup: ["8427704778888"],
+  beefSnackSticks: ["7112411218056"],
+  beefJerky: ["7112411414664"],
+  beefBoxes: [
+    { oneSixteenth: "7118219772040" },
+    { effortless: "7118217707656" },
+    { oneEighth: "7118218068104" },
+    { ohMy: "7118215708808" },
+    { pintSize: "7118217183368" },
+    { oneQuarter: "7118219018376" },
+    { straddlingTheFence: "7118218363016" },
+  ],
+  porkBoxes: [
+    { pocketSizedPiglet: "7118226587784" },
+    { picnic: "7920674242696" },
+    { oneQuarter: "7118227013768" },
+    { oneEighth: "7118226849928" },
+    { thePortlyPig: "7118226456712" },
+  ],
+  hybridBoxes: [
+    { betwixtAndBetween: "7118222327944" },
+    { theHybrid: "7118221672584" },
+    { everythingButTheKitchenSink: "7118212661384" },
+  ],
+};
+
+const blacklistedIds: any = [];
+for (const [key, value] of Object.entries(blacklistedProductsJson)) {
+  console.log("Key: ", key);
+  console.log("Value: ", value);
+  if (key.includes("Box")) {
+    for (let i = 0; i < value.length; ++i) {
+      blacklistedIds.push(...Object.values(value[i]));
+    }
+  } else {
+    blacklistedIds.push(...value);
+  }
+}
+
+console.log("BLACKLISTED IDS: ", blacklistedIds);
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
 
@@ -30,11 +79,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
               lastName
               email
             }
-            lineItems(first: 5) {
+            lineItems(first: 250) {
               edges {
                 node {
+                  id
                   title
                   quantity
+                  product {
+                    id
+                  }
                   variant {
                     displayName
                   }
@@ -59,6 +112,24 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const orderSubtotal = parseFloat(
       order.node.currentSubtotalPriceSet.presentmentMoney.amount,
     );
+
+    if (orderSubtotal === 0) return null;
+
+    const lineItems = order.node.lineItems.edges;
+    let hasAdjustableItem = false;
+    const blacklistedIdsSet = new Set(blacklistedIds);
+    for (let i = 0; i < lineItems.length; i++) {
+      const currentProduct = lineItems[i].node?.product;
+      if (!currentProduct) continue; // honestly idk why this would ever happen but i dont want code crashing
+      const productIdArr = currentProduct.id?.split("/");
+      const productId = productIdArr[productIdArr.length - 1];
+      // If it has an item that isn't blacklisted, it's an adjustable order
+      if (!blacklistedIdsSet.has(productId)) {
+        hasAdjustableItem = true;
+      }
+    }
+
+    if (!hasAdjustableItem) return null;
 
     // const orderDiscount = parseFloat(
     //   order.node.cartDiscountAmountSet?.presentmentMoney.amount,
@@ -95,7 +166,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Index() {
-  const orders = useLoaderData<typeof loader>();
+  let orders = useLoaderData<typeof loader>();
+  orders = orders.filter((order: any) => order !== null);
 
   const navigate = useNavigate();
 
